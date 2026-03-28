@@ -18,7 +18,7 @@ jobs:
 
       - name: Install DigiCert SMTools and set environment variables
         run: |
-          curl -X GET https://one.digicert.com/signingmanager/api-ui/v1/releases/smtools-windows-x64.msi/download -H "x-api-key:${{ secrets.SM_API_KEY }}" -o smtools-windows-x64.msi
+          curl -X GET ${{ secrets.SM_HOST }}/signingmanager/api-ui/v1/releases/smtools-windows-x64.msi/download -H "x-api-key:${{ secrets.SM_API_KEY }}" -o smtools-windows-x64.msi
           msiexec /i smtools-windows-x64.msi /quiet /qn
           echo "SM_HOST=${{ secrets.SM_HOST }}" >> "%GITHUB_ENV%"
           echo "SM_API_KEY=${{ secrets.SM_API_KEY }}" >> "%GITHUB_ENV%"
