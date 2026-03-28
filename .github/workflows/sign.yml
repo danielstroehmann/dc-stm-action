@@ -3,74 +3,86 @@ name: Sign notepad.exe with DigiCert STM
 on:
   workflow_dispatch:
 
-jobs:
-  sign:
-    runs-on: windows-latest
+  jobs:
+    sign:
+        runs-on: windows-latest
 
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
+            steps:
+                  - name: Check out repository
+                          uses: actions/checkout@v6
 
-      - name: Setup Certificate
-        run: |
-          echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > /c/Certificate_pkcs12.p12
-          wc -c /c/Certificate_pkcs12.p12
-        shell: bash
+                                - name: Setup Certificate
+                                        run: |
+                                                  echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > /c/Certificate_pkcs12.p12
+                                                            wc -c /c/Certificate_pkcs12.p12
+                                                                    shell: bash
 
-      - name: Install DigiCert SMTools and set environment variables
-        run: |
-          curl -X GET ${{ secrets.SM_HOST }}/signingmanager/api-ui/v1/releases/smtools-windows-x64.msi/download -H "x-api-key:${{ secrets.SM_API_KEY }}" -o smtools-windows-x64.msi
-          msiexec /i smtools-windows-x64.msi /quiet /qn
-          echo SM_HOST=${{ secrets.SM_HOST }}>> %GITHUB_ENV%
-          echo SM_API_KEY=${{ secrets.SM_API_KEY }}>> %GITHUB_ENV%
-          echo SM_CLIENT_CERT_FILE=C:\Certificate_pkcs12.p12>> %GITHUB_ENV%
-          echo SM_CLIENT_CERT_PASSWORD=${{ secrets.SM_CLIENT_CERT_PASSWORD }}>> %GITHUB_ENV%
-          echo C:\Program Files\DigiCert\DigiCert One Signing Manager Tools>> %GITHUB_PATH%
-          echo C:\Program Files (x86)\Windows Kits\10\App Certification Kit>> %GITHUB_PATH%
-        shell: cmd
-
-      - name: Sync certificates to Windows certificate store
-        run: smctl windows certsync
-        shell: cmd
-
-      - name: Copy notepad.exe
-        run: copy C:\Windows\System32\notepad.exe notepad_local.exe
-        shell: cmd
-
-      - name: Sign with smctl
-        run: smctl sign --input notepad_local.exe --keypair-alias ${{ secrets.SM_KEYPAIR_ALIAS }}
-        shell: cmd
-
-      - name: Import Root CA and ICA into Windows Certificate Store
-        run: |
-          $rootB64 = "${{ secrets.SM_ROOT_CERT_B64 }}"
-          $icaB64  = "${{ secrets.SM_ICA_CERT_B64 }}"
-          $rootBytes = [Convert]::FromBase64String($rootB64)
-          $icaBytes  = [Convert]::FromBase64String($icaB64)
-          $rootPath = "$env:TEMP\root_ca.cer"
-          $icaPath  = "$env:TEMP\ica.cer"
-          [IO.File]::WriteAllBytes($rootPath, $rootBytes)
-          [IO.File]::WriteAllBytes($icaPath,  $icaBytes)
-          $rootCert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($rootPath)
-          $icaCert  = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($icaPath)
-          $rootStore = New-Object System.Security.Cryptography.X509Certificates.X509Store("Root","LocalMachine")
-          $rootStore.Open("ReadWrite")
-          $rootStore.Add($rootCert)
-          $rootStore.Close()
-          $icaStore = New-Object System.Security.Cryptography.X509Certificates.X509Store("CA","LocalMachine")
-          $icaStore.Open("ReadWrite")
-          $icaStore.Add($icaCert)
-          $icaStore.Close()
-          Write-Host "Root CA imported: $($rootCert.Subject)"
-          Write-Host "ICA imported:     $($icaCert.Subject)"
-        shell: pwsh
-
-      - name: Verify signature with smctl
-        run: smctl sign verify --input notepad_local.exe
-        shell: cmd
-
-      - name: Upload signed file
-        uses: actions/upload-artifact@v7
-        with:
-          name: signed-notepad
-          path: notepad_local.exe
+                                                                          - name: Install DigiCert SMTools and set environment variables
+                                                                                  run: |
+                                                                                            curl -X GET ${{ secrets.SM_HOST }}/signingmanager/api-ui/v1/releases/smtools-windows-x64.msi/download -H "x-api-key:${{ secrets.SM_API_KEY }}" -o smtools-windows-x64.msi
+                                                                                                      msiexec /i smtools-windows-x64.msi /quiet /qn
+                                                                                                                echo SM_HOST=${{ secrets.SM_HOST }}>> %GITHUB_ENV%
+                                                                                                                          echo SM_API_KEY=${{ secrets.SM_API_KEY }}>> %GITHUB_ENV%
+                                                                                                                                    echo SM_CLIENT_CERT_FILE=C:\Certificate_pkcs12.p12>> %GITHUB_ENV%
+                                                                                                                                              echo SM_CLIENT_CERT_PASSWORD=${{ secrets.SM_CLIENT_CERT_PASSWORD }}>> %GITHUB_ENV%
+                                                                                                                                                        echo C:\Program Files\DigiCert\DigiCert One Signing Manager Tools>> %GITHUB_PATH%
+                                                                                                                                                                  echo C:\Program Files (x86)\Windows Kits\10\App Certification Kit>> %GITHUB_PATH%
+                                                                                                                                                                          shell: cmd
+                                                                                                                                                                          
+                                                                                                                                                                                - name: Sync certificates to Windows certificate store
+                                                                                                                                                                                        run: smctl windows certsync
+                                                                                                                                                                                                shell: cmd
+                                                                                                                                                                                                
+                                                                                                                                                                                                      - name: Copy notepad.exe
+                                                                                                                                                                                                              run: copy C:\Windows\System32\notepad.exe notepad_local.exe
+                                                                                                                                                                                                                      shell: cmd
+                                                                                                                                                                                                                      
+                                                                                                                                                                                                                            - name: Sign with smctl
+                                                                                                                                                                                                                                    run: smctl sign --input notepad_local.exe --keypair-alias ${{ secrets.SM_KEYPAIR_ALIAS }}
+                                                                                                                                                                                                                                            shell: cmd
+                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                  - name: Import Root CA and ICA into Windows Certificate Store
+                                                                                                                                                                                                                                                          run: |
+                                                                                                                                                                                                                                                                    $rootB64 = "${{ secrets.SM_ROOT_CERT_B64 }}"
+                                                                                                                                                                                                                                                                              $icaB64 = "${{ secrets.SM_ICA_CERT_B64 }}"
+                                                                                                                                                                                                                                                                                        $rootBytes = [Convert]::FromBase64String($rootB64)
+                                                                                                                                                                                                                                                                                                  $icaBytes = [Convert]::FromBase64String($icaB64)
+                                                                                                                                                                                                                                                                                                            $rootPath = "$env:TEMP\root_ca.cer"
+                                                                                                                                                                                                                                                                                                                      $icaPath = "$env:TEMP\ica.cer"
+                                                                                                                                                                                                                                                                                                                                [IO.File]::WriteAllBytes($rootPath, $rootBytes)
+                                                                                                                                                                                                                                                                                                                                          [IO.File]::WriteAllBytes($icaPath, $icaBytes)
+                                                                                                                                                                                                                                                                                                                                                    $rootCert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($rootPath)
+                                                                                                                                                                                                                                                                                                                                                              $icaCert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($icaPath)
+                                                                                                                                                                                                                                                                                                                                                                        $rootStore = New-Object System.Security.Cryptography.X509Certificates.X509Store("Root","LocalMachine")
+                                                                                                                                                                                                                                                                                                                                                                                  $rootStore.Open("ReadWrite")
+                                                                                                                                                                                                                                                                                                                                                                                            $rootStore.Add($rootCert)
+                                                                                                                                                                                                                                                                                                                                                                                                      $rootStore.Close()
+                                                                                                                                                                                                                                                                                                                                                                                                                $icaStore = New-Object System.Security.Cryptography.X509Certificates.X509Store("CA","LocalMachine")
+                                                                                                                                                                                                                                                                                                                                                                                                                          $icaStore.Open("ReadWrite")
+                                                                                                                                                                                                                                                                                                                                                                                                                                    $icaStore.Add($icaCert)
+                                                                                                                                                                                                                                                                                                                                                                                                                                              $icaStore.Close()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        Write-Host "Root CA imported: $($rootCert.Subject)"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                  Write-Host "ICA imported: $($icaCert.Subject)"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                          shell: pwsh
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                - name: Copy files to sign into output directory
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        run: |
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  mkdir signed_output
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            for %%f in (to_be_signed\*) do copy "%%f" "signed_output\%%~nxf"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    shell: cmd
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          - name: Sign files in output directory with smctl
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  run: |
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            for %%f in (signed_output\*) do smctl sign --input "%%f" --keypair-alias ${{ secrets.SM_KEYPAIR_ALIAS }}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    shell: cmd
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          - name: Verify signature with smctl
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  run: |
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            for %%f in (signed_output\*) do smctl sign verify --input "%%f"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    shell: cmd
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          - name: Upload signed files
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  uses: actions/upload-artifact@v7
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          with:
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    name: signed-files
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              path: signed_output/
