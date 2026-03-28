@@ -1,4 +1,4 @@
-name: Sign notepad.exe with DigiCert STM
+name: PLEASE - Provide Legal Exculpation And Sign Everything
 
 on:
   workflow_dispatch:
@@ -31,14 +31,6 @@ jobs:
 
       - name: Sync certificates to Windows certificate store
         run: smctl windows certsync
-        shell: cmd
-
-      - name: Copy notepad.exe
-        run: copy C:\Windows\System32\notepad.exe notepad_local.exe
-        shell: cmd
-
-      - name: Sign with smctl
-        run: smctl sign --input notepad_local.exe --keypair-alias ${{ secrets.SM_KEYPAIR_ALIAS }}
         shell: cmd
 
       - name: Import Root CA and ICA into Windows Certificate Store
