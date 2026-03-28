@@ -59,18 +59,26 @@ jobs:
 
       - name: Copy files to sign into output directory
         run: |
-          mkdir signed_output
-            for %%f in (to_be_signed\*) do (for %%e in (.exe .dll .msi .cab .sys .cat .ps1 .msix .appx) do if /i "%%~xf"=="%%e" copy "%%f" "signed_output\%%~nxf")        shell: cmd
+          New-Item -ItemType Directory -Force -Path signed_output | Out-Null
+          $extensions = @('.exe', '.dll', '.msi', '.cab', '.sys', '.cat', '.ps1', '.msix', '.appx')
+          Get-ChildItem -Path "to_be_signed\*" | Where-Object { $extensions -contains $_.Extension.ToLower() } | ForEach-Object {
+            Copy-Item $_.FullName -Destination "signed_output\$($_.Name)"
+          }
+        shell: pwsh
 
       - name: Sign files in output directory with smctl
         run: |
-          for %%f in (signed_output\*) do smctl sign --input "%%f" --keypair-alias ${{ secrets.SM_KEYPAIR_ALIAS }}
-        shell: cmd
+          Get-ChildItem -Path "signed_output\*" | ForEach-Object {
+            smctl sign --input "$($_.FullName)" --keypair-alias ${{ secrets.SM_KEYPAIR_ALIAS }}
+          }
+        shell: pwsh
 
       - name: Verify signature with smctl
         run: |
-          for %%f in (signed_output\*) do smctl sign verify --input "%%f"
-        shell: cmd
+          Get-ChildItem -Path "signed_output\*" | ForEach-Object {
+            smctl sign verify --input "$($_.FullName)"
+          }
+        shell: pwsh
 
       - name: Upload signed files
         uses: actions/upload-artifact@v4
