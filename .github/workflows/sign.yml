@@ -73,9 +73,7 @@ jobs:
 
       - name: Verify signature with smctl
         run: |
-          Get-ChildItem -Path "signed_output\*" | ForEach-Object {
-            smctl sign verify --input "$($_.FullName)"
-          }
+          smctl sign verify --input "signed_output"
         shell: pwsh
 
       - name: Upload signed files
