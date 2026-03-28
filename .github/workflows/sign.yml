@@ -60,8 +60,7 @@ jobs:
       - name: Copy files to sign into output directory
         run: |
           mkdir signed_output
-          for %%f in (to_be_signed\*) do copy "%%f" "signed_output\%%~nxf"
-        shell: cmd
+            for %%f in (to_be_signed\*) do (for %%e in (.exe .dll .msi .cab .sys .cat .ps1 .msix .appx) do if /i "%%~xf"=="%%e" copy "%%f" "signed_output\%%~nxf")        shell: cmd
 
       - name: Sign files in output directory with smctl
         run: |
