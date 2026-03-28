@@ -13,19 +13,17 @@ jobs:
 
       - name: Setup Certificate
         run: |
-          echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > C:\Certificate_pkcs12.p12
+          echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > /c/Certificate_pkcs12.p12
+          echo "Certificate written, size:"
+          wc -c /c/Certificate_pkcs12.p12
         shell: bash
 
       - name: Debug - Verify P12 certificate
         run: |
           echo === Checking file exists and size ===
           dir C:\Certificate_pkcs12.p12
-          echo === certutil info (no password) ===
+          echo === certutil dump (structure check) ===
           certutil -dump C:\Certificate_pkcs12.p12
-          echo === SM_HOST value (first 10 chars) ===
-          set SM_HOST_VAL=${{ secrets.SM_HOST }}
-          echo SM_HOST starts with: !SM_HOST_VAL:~0,10!
-          echo SM_HOST length check done
         shell: cmd
 
       - name: Install DigiCert SMTools and set environment variables
@@ -39,17 +37,13 @@ jobs:
           echo C:\Program Files\DigiCert\DigiCert One Signing Manager Tools>> "%GITHUB_PATH%"
         shell: cmd
 
-      - name: Debug - Verify env vars and cert file after install
+      - name: Debug - Verify env vars after install
         run: |
-          echo === Env vars set (non-sensitive) ===
           echo SM_HOST=%SM_HOST%
           echo SM_CLIENT_CERT_FILE=%SM_CLIENT_CERT_FILE%
-          echo SM_API_KEY is set: %SM_API_KEY:~0,4%...
-          echo SM_CLIENT_CERT_PASSWORD length check:
-          echo %SM_CLIENT_CERT_PASSWORD:~0,1%
-          echo === Cert file check ===
+          echo SM_API_KEY first 4 chars: %SM_API_KEY:~0,4%
+          echo SM_CLIENT_CERT_PASSWORD set: %SM_CLIENT_CERT_PASSWORD:~0,1%
           dir "%SM_CLIENT_CERT_FILE%"
-          echo === smctl health check ===
           smctl healthcheck
         shell: cmd
 
