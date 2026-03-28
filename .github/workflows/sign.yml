@@ -18,14 +18,6 @@ jobs:
           wc -c /c/Certificate_pkcs12.p12
         shell: bash
 
-      - name: Debug - Verify P12 certificate
-        run: |
-          echo === Checking file exists and size ===
-          dir C:\Certificate_pkcs12.p12
-          echo === certutil dump (structure check) ===
-          certutil -dump C:\Certificate_pkcs12.p12
-        shell: cmd
-
       - name: Install DigiCert SMTools and set environment variables
         run: |
           curl -X GET ${{ secrets.SM_HOST }}/signingmanager/api-ui/v1/releases/smtools-windows-x64.msi/download -H "x-api-key:${{ secrets.SM_API_KEY }}" -o smtools-windows-x64.msi
@@ -35,16 +27,7 @@ jobs:
           echo SM_CLIENT_CERT_FILE=C:\Certificate_pkcs12.p12>> %GITHUB_ENV%
           echo SM_CLIENT_CERT_PASSWORD=${{ secrets.SM_CLIENT_CERT_PASSWORD }}>> %GITHUB_ENV%
           echo C:\Program Files\DigiCert\DigiCert One Signing Manager Tools>> %GITHUB_PATH%
-        shell: cmd
-
-      - name: Debug - Verify env vars after install
-        run: |
-          echo SM_HOST=%SM_HOST%
-          echo SM_CLIENT_CERT_FILE=%SM_CLIENT_CERT_FILE%
-          echo SM_API_KEY first 4 chars: %SM_API_KEY:~0,4%
-          echo SM_CLIENT_CERT_PASSWORD first char: %SM_CLIENT_CERT_PASSWORD:~0,1%
-          dir "%SM_CLIENT_CERT_FILE%"
-          smctl healthcheck
+          echo C:\Program Files (x86)\Windows Kits\10\App Certification Kit>> %GITHUB_PATH%
         shell: cmd
 
       - name: Sync certificates to Windows certificate store
@@ -59,8 +42,10 @@ jobs:
         run: smctl sign --input notepad_unsigned.exe --keypair-alias ${{ secrets.SM_KEYPAIR_ALIAS }}
         shell: cmd
 
-      - name: Verify signature
-        run: signtool verify /v /pa notepad_unsigned.exe
+      - name: Verify signature with signtool
+        run: |
+          where signtool || echo signtool not in PATH, trying full path
+          "C:\Program Files (x86)\Windows Kits\10\App Certification Kit\signtool.exe" verify /v /pa notepad_unsigned.exe
         shell: cmd
 
       - name: Upload signed file
