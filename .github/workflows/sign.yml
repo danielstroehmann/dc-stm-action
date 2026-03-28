@@ -16,19 +16,15 @@ jobs:
           echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > C:\Certificate_pkcs12.p12
         shell: bash
 
-      - name: Set environment variables
+      - name: Install DigiCert SMTools and set environment variables
         run: |
-          echo "SM_HOST=${{ secrets.SM_HOST }}" >> "$GITHUB_ENV"
-          echo "SM_API_KEY=${{ secrets.SM_API_KEY }}" >> "$GITHUB_ENV"
-          echo "SM_CLIENT_CERT_FILE=C:\Certificate_pkcs12.p12" >> "$GITHUB_ENV"
-          echo "SM_CLIENT_CERT_PASSWORD=${{ secrets.SM_CLIENT_CERT_PASSWORD }}" >> "$GITHUB_ENV"
-          echo "C:\Program Files\DigiCert\DigiCert One Signing Manager Tools" >> $GITHUB_PATH
-        shell: bash
-
-      - name: Install DigiCert SMTools
-        run: |
-          curl -X GET https://one.digicert.com/signingmanager/api-ui/v1/releases/smtools-windows-x64.msi/download -H "x-api-key:%SM_API_KEY%" -o smtools-windows-x64.msi
+          curl -X GET https://one.digicert.com/signingmanager/api-ui/v1/releases/smtools-windows-x64.msi/download -H "x-api-key:${{ secrets.SM_API_KEY }}" -o smtools-windows-x64.msi
           msiexec /i smtools-windows-x64.msi /quiet /qn
+          echo "SM_HOST=${{ secrets.SM_HOST }}" >> "%GITHUB_ENV%"
+          echo "SM_API_KEY=${{ secrets.SM_API_KEY }}" >> "%GITHUB_ENV%"
+          echo "SM_CLIENT_CERT_FILE=C:\Certificate_pkcs12.p12" >> "%GITHUB_ENV%"
+          echo "SM_CLIENT_CERT_PASSWORD=${{ secrets.SM_CLIENT_CERT_PASSWORD }}" >> "%GITHUB_ENV%"
+          echo C:\Program Files\DigiCert\DigiCert One Signing Manager Tools>> "%GITHUB_PATH%"
         shell: cmd
 
       - name: Sync certificates to Windows certificate store
