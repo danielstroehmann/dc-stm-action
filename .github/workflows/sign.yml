@@ -41,6 +41,52 @@ jobs:
         run: smctl sign --input notepad_unsigned.exe --keypair-alias ${{ secrets.SM_KEYPAIR_ALIAS }}
         shell: cmd
 
+      - name: Import Root CA and ICA into Windows Certificate Store
+        run: |
+          $rootB64 = "${{ secrets.SM_ROOT_CERT_B64 }}"
+          $icaB64  = "${{ secrets.SM_ICA_CERT_B64 }}"
+          $rootBytes = [Convert]::FromBase64String($rootB64)
+          $icaBytes  = [Convert]::FromBase64String($icaB64)
+          $rootPath = "$env:TEMP\root_ca.cer"
+          $icaPath  = "$env:TEMP\ica.cer"
+          [IO.File]::WriteAllBytes($rootPath, $rootBytes)
+          [IO.File]::WriteAllBytes($icaPath,  $icaBytes)
+          $rootCert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($rootPath)
+          $icaCert  = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($icaPath)
+          $rootStore = New-Object System.Security.Cryptography.X509Certificates.X509Store("Root","LocalMachine")
+          $rootStore.Open("ReadWrite")
+          $rootStore.Add($rootCert)
+          $rootStore.Close()
+          $icaStore = New-Object System.Security.Cryptography.X509Certificates.X509Store("CA","LocalMachine")
+          $icaStore.Open("ReadWrite")
+          $icaStore.Add($icaCert)
+          $icaStore.Close()
+          Write-Host "Root CA imported: $($rootCert.Subject)"
+          Write-Host "ICA imported:     $($icaCert.Subject)"
+        shell: pwsh
+
+      - name: Verify signature with smctl
+        run: smctl sign verify --input notepad_unsigned.exe
+        shell: cmd
+
+      - name: Show signature information
+        run: |
+          $sig = Get-AuthenticodeSignature -FilePath "notepad_unsigned.exe"
+          Write-Host "================================================"
+          Write-Host " SIGNATURE INFORMATION"
+          Write-Host "================================================"
+          Write-Host "File      : notepad_unsigned.exe"
+          Write-Host "Status    : $($sig.Status)"
+          Write-Host "Subject   : $($sig.SignerCertificate.Subject)"
+          Write-Host "Issuer    : $($sig.SignerCertificate.Issuer)"
+          Write-Host "Valid From: $($sig.SignerCertificate.NotBefore)"
+          Write-Host "Valid To  : $($sig.SignerCertificate.NotAfter)"
+          Write-Host "Thumbprint: $($sig.SignerCertificate.Thumbprint)"
+          Write-Host "Algorithm : $($sig.SignerCertificate.SignatureAlgorithm.FriendlyName)"
+          Write-Host "Timestamp : $($sig.TimeStamperCertificate.Subject)"
+          Write-Host "================================================"
+        shell: pwsh
+
       - name: Upload signed file
         uses: actions/upload-artifact@v4
         with:
