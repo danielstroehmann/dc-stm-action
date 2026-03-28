@@ -14,7 +14,6 @@ jobs:
       - name: Setup Certificate
         run: |
           echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > /c/Certificate_pkcs12.p12
-          echo "Certificate written, size:"
           wc -c /c/Certificate_pkcs12.p12
         shell: bash
 
@@ -42,12 +41,23 @@ jobs:
         run: smctl sign --input notepad_unsigned.exe --keypair-alias ${{ secrets.SM_KEYPAIR_ALIAS }}
         shell: cmd
 
-      - name: Verify signature with signtool
-        continue-on-error: true
+      - name: Show signature information
         run: |
-          signtool verify /v /pa notepad_unsigned.exe
-          echo "Note: root chain error expected for test certs - signature itself is valid"
-        shell: cmd
+          $sig = Get-AuthenticodeSignature -FilePath "notepad_unsigned.exe"
+          Write-Host "================================================"
+          Write-Host "         SIGNATURE INFORMATION"
+          Write-Host "================================================"
+          Write-Host "File        : notepad_unsigned.exe"
+          Write-Host "Status      : $($sig.Status)"
+          Write-Host "Subject     : $($sig.SignerCertificate.Subject)"
+          Write-Host "Issuer      : $($sig.SignerCertificate.Issuer)"
+          Write-Host "Valid From  : $($sig.SignerCertificate.NotBefore)"
+          Write-Host "Valid To    : $($sig.SignerCertificate.NotAfter)"
+          Write-Host "Thumbprint  : $($sig.SignerCertificate.Thumbprint)"
+          Write-Host "Algorithm   : $($sig.SignerCertificate.SignatureAlgorithm.FriendlyName)"
+          Write-Host "Timestamp   : $($sig.TimeStamperCertificate.Subject)"
+          Write-Host "================================================"
+        shell: pwsh
 
       - name: Upload signed file
         uses: actions/upload-artifact@v4
