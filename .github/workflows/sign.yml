@@ -3,56 +3,52 @@ name: Sign notepad.exe with DigiCert STM
 on:
   workflow_dispatch:
 
-  jobs:
-    sign:
-        runs-on: windows-latest
+jobs:
+  sign:
+    runs-on: windows-latest
 
-            steps:
-                  - name: Check out repository
-                          uses: actions/checkout@v4
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-                                - name: Setup Certificate
-                                        run: |
-                                                  echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > C:\Certificate_pkcs12.p12
-                                                          shell: bash
+      - name: Setup Certificate
+        run: |
+          echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > C:\Certificate_pkcs12.p12
+        shell: bash
 
-                                                                - name: Set environment variables
-                                                                        run: |
-                                                                                  echo "SM_HOST=${{ secrets.SM_HOST }}" >> "$GITHUB_ENV"
-                                                                                            echo "SM_API_KEY=${{ secrets.SM_API_KEY }}" >> "$GITHUB_ENV"
-                                                                                                      echo "SM_CLIENT_CERT_FILE=C:\Certificate_pkcs12.p12" >> "$GITHUB_ENV"
-                                                                                                                echo "SM_CLIENT_CERT_PASSWORD=${{ secrets.SM_CLIENT_CERT_PASSWORD }}" >> "$GITHUB_ENV"
-                                                                                                                          echo "C:\Program Files\DigiCert\DigiCert One Signing Manager Tools" >> $GITHUB_PATH
-                                                                                                                                  shell: bash
-                                                                                                                                  
-                                                                                                                                        - name: Install DigiCert SMTools
-                                                                                                                                                run: |
-                                                                                                                                                          curl -X GET https://one.digicert.com/signingmanager/api-ui/v1/releases/smtools-windows-x64.msi/download -H "x-api-key:%SM_API_KEY%" -o smtools-windows-x64.msi
-                                                                                                                                                                    msiexec /i smtools-windows-x64.msi /quiet /qn
-                                                                                                                                                                            shell: cmd
-                                                                                                                                                                            
-                                                                                                                                                                                  - name: Sync certificates to Windows certificate store
-                                                                                                                                                                                          run: |
-                                                                                                                                                                                                    smctl windows certsync
-                                                                                                                                                                                                            shell: cmd
-                                                                                                                                                                                                            
-                                                                                                                                                                                                                  - name: Copy notepad.exe
-                                                                                                                                                                                                                          run: |
-                                                                                                                                                                                                                                    copy C:\Windows\System32\notepad.exe notepad_unsigned.exe
-                                                                                                                                                                                                                                            shell: cmd
-                                                                                                                                                                                                                                            
-                                                                                                                                                                                                                                                  - name: Sign notepad_unsigned.exe with smctl
-                                                                                                                                                                                                                                                          run: |
-                                                                                                                                                                                                                                                                    smctl sign --input notepad_unsigned.exe --keypair-alias ${{ secrets.SM_KEYPAIR_ALIAS }}
-                                                                                                                                                                                                                                                                            shell: cmd
-                                                                                                                                                                                                                                                                            
-                                                                                                                                                                                                                                                                                  - name: Verify signature with signtool
-                                                                                                                                                                                                                                                                                          run: |
-                                                                                                                                                                                                                                                                                                    signtool verify /v /pa notepad_unsigned.exe
-                                                                                                                                                                                                                                                                                                            shell: cmd
-                                                                                                                                                                                                                                                                                                            
-                                                                                                                                                                                                                                                                                                                  - name: Upload signed file
-                                                                                                                                                                                                                                                                                                                          uses: actions/upload-artifact@v4
-                                                                                                                                                                                                                                                                                                                                  with:
-                                                                                                                                                                                                                                                                                                                                            name: signed-notepad
-                                                                                                                                                                                                                                                                                                                                                      path: notepad_unsigned.exe
+      - name: Set environment variables
+        run: |
+          echo "SM_HOST=${{ secrets.SM_HOST }}" >> "$GITHUB_ENV"
+          echo "SM_API_KEY=${{ secrets.SM_API_KEY }}" >> "$GITHUB_ENV"
+          echo "SM_CLIENT_CERT_FILE=C:\Certificate_pkcs12.p12" >> "$GITHUB_ENV"
+          echo "SM_CLIENT_CERT_PASSWORD=${{ secrets.SM_CLIENT_CERT_PASSWORD }}" >> "$GITHUB_ENV"
+          echo "C:\Program Files\DigiCert\DigiCert One Signing Manager Tools" >> $GITHUB_PATH
+        shell: bash
+
+      - name: Install DigiCert SMTools
+        run: |
+          curl -X GET https://one.digicert.com/signingmanager/api-ui/v1/releases/smtools-windows-x64.msi/download -H "x-api-key:%SM_API_KEY%" -o smtools-windows-x64.msi
+          msiexec /i smtools-windows-x64.msi /quiet /qn
+        shell: cmd
+
+      - name: Sync certificates to Windows certificate store
+        run: smctl windows certsync
+        shell: cmd
+
+      - name: Copy notepad.exe
+        run: copy C:\Windows\System32\notepad.exe notepad_unsigned.exe
+        shell: cmd
+
+      - name: Sign with smctl
+        run: smctl sign --input notepad_unsigned.exe --keypair-alias ${{ secrets.SM_KEYPAIR_ALIAS }}
+        shell: cmd
+
+      - name: Verify signature
+        run: signtool verify /v /pa notepad_unsigned.exe
+        shell: cmd
+
+      - name: Upload signed file
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-notepad
+          path: notepad_unsigned.exe
