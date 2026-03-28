@@ -68,9 +68,7 @@ jobs:
 
       - name: Sign files in output directory with smctl
         run: |
-          Get-ChildItem -Path "signed_output\*" | ForEach-Object {
-            smctl sign --input "$($_.FullName)" --keypair-alias ${{ secrets.SM_KEYPAIR_ALIAS }}
-          }
+          smctl sign --input "signed_output" --keypair-alias ${{ secrets.SM_KEYPAIR_ALIAS }}
         shell: pwsh
 
       - name: Verify signature with smctl
