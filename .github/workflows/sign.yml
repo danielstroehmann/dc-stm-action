@@ -34,11 +34,11 @@ jobs:
         shell: cmd
 
       - name: Copy notepad.exe
-        run: copy C:\Windows\System32\notepad.exe notepad_unsigned.exe
+        run: copy C:\Windows\System32\notepad.exe notepad_local.exe
         shell: cmd
 
       - name: Sign with smctl
-        run: smctl sign --input notepad_unsigned.exe --keypair-alias ${{ secrets.SM_KEYPAIR_ALIAS }}
+        run: smctl sign --input notepad_local.exe --keypair-alias ${{ secrets.SM_KEYPAIR_ALIAS }}
         shell: cmd
 
       - name: Import Root CA and ICA into Windows Certificate Store
@@ -66,16 +66,16 @@ jobs:
         shell: pwsh
 
       - name: Verify signature with smctl
-        run: smctl sign verify --input notepad_unsigned.exe
+        run: smctl sign verify --input notepad_local.exe
         shell: cmd
 
       - name: Show signature information
         run: |
-          $sig = Get-AuthenticodeSignature -FilePath "notepad_unsigned.exe"
+          $sig = Get-AuthenticodeSignature -FilePath "notepad_local.exe"
           Write-Host "================================================"
           Write-Host " SIGNATURE INFORMATION"
           Write-Host "================================================"
-          Write-Host "File      : notepad_unsigned.exe"
+          Write-Host "File      : notepad_local.exe"
           Write-Host "Status    : $($sig.Status)"
           Write-Host "Subject   : $($sig.SignerCertificate.Subject)"
           Write-Host "Issuer    : $($sig.SignerCertificate.Issuer)"
@@ -91,4 +91,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: signed-notepad
-          path: notepad_unsigned.exe
+          path: notepad_local.exe
